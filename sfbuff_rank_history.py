@@ -349,8 +349,9 @@ def _cli():
 
     args = p.parse_args()
 
-    if args.plot and not args.ma:
-        p.error("--plot 使用時は --ma を少なくとも1つ指定してください")
+    # --plot のときは --ma または --ema のどちらか必須
+    if args.plot and not (args.ma or args.ema):
+        p.error("--plot 使用時は --ma または --ema を少なくとも1つ指定してください")
 
     for opt_name, vals in (("--ma", args.ma or []), ("--ema", args.ema or [])):
         for v in vals:
