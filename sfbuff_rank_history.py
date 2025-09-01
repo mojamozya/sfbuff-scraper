@@ -221,8 +221,9 @@ def plot_rank_history(
 
     fig, ax = plt.subplots(figsize=(11, 5), dpi=120)
 
-    # x軸の試合番号目盛をグレーに
-    ax.tick_params(axis="x", colors="#666666")
+    # 補助線（グリッド）を有効化
+    ax.grid(True, axis="x", linewidth=2, alpha=0.1)
+    ax.grid(True, axis="y", linewidth=2, alpha=0.1)
 
     # 生データ
     if not hide_raw:
@@ -316,9 +317,20 @@ def plot_rank_history(
             clip_on=False,
         )
 
-    # ====== 右下スタンプ（最下段。被り回避のため y を低めに） ======
-    stamp = f"Generated: {generated_at_str or ''}  |  Range: {disp_from} — {disp_to}"
+    # ====== 右下スタンプ ======
+    try:
+        last_match_dt = _parse_dt(data[-1]["d"])
+        last_match_str = last_match_dt.strftime("%Y-%m-%d %H:%M")
+    except Exception:
+        last_match_str = "—"
+
+    stamp = (
+        f"Generated: {generated_at_str or ''}  |  "
+        f"Range: {disp_from} — {disp_to}  |  "
+        f"Last Match: {last_match_str}"
+    )
     fig.text(0.995, 0.02, stamp, ha="right", va="bottom", fontsize=9, alpha=0.75)
+
 
 
     fig.savefig(out_path, bbox_inches="tight")
