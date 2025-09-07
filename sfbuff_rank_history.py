@@ -194,6 +194,7 @@ def plot_rank_history(
     date_from: Optional[str] = None,
     date_to: Optional[str] = None,
     generated_at_str: Optional[str] = None,
+    hide_xaxis: bool = False,
 ) -> None:
     """
     横軸=試合番号で、生データ＋SMA(必須)＋EMA(任意)を描画。
@@ -331,7 +332,9 @@ def plot_rank_history(
     )
     fig.text(0.995, 0.02, stamp, ha="right", va="bottom", fontsize=9, alpha=0.75)
 
-
+    if hide_xaxis:
+        ax.set_xticks([])   # 目盛りを消す
+        ax.set_xlabel("")   # ラベルも消す 
 
     fig.savefig(out_path, bbox_inches="tight")
     if show:
@@ -358,6 +361,8 @@ def _cli():
                    help="差がこの値以上ならシーズン切替とみなす（デフォ:40）")
     p.add_argument("--no-season-split", action="store_true", help="シーズン分割を無効化")
     p.add_argument("--stamp-tz", default="Asia/Tokyo", help="生成日時のタイムゾーン")
+    p.add_argument("--hide-x", action="store_true", help="横軸の試合数を非表示にする")
+
 
     args = p.parse_args()
 
@@ -401,6 +406,7 @@ def _cli():
             date_from=args.date_from,
             date_to=args.date_to,
             generated_at_str=generated_at_str,
+            hide_xaxis=args.hide_x,
         )
 
 
