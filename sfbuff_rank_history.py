@@ -29,7 +29,7 @@ def build_url(player_or_url: str,
     if date_to:
         qs["played_to"] = date_to
     query = urllib.parse.urlencode(qs, safe="~")
-    return f"https://www.sfbuff.site/fighters/{player_or_url}/ranked_history" + ("?" + query if query else "")
+    return f"https://sfbuff.site/fighters/{player_or_url}/ranked_history" + ("?" + query if query else "")
 
 
 # ----------------------------------------------------------------------
