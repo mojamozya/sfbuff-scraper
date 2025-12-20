@@ -34,30 +34,42 @@ def build_url(player_or_url: str,
 
 # ----------------------------------------------------------------------
 def scrape_rank_history(url: str, tz: str = "Asia/Tokyo") -> List[dict]:
-    """SFBuffのRanked Historyグラフから（試合x, レートy）を抽出して返す。"""
+    """SFBuffのRanked Historyからデータを抽出（LP/MR両対応版）"""
     headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
     sess = requests.Session()
     sess.headers.update(headers)
-
-    # ① タイムゾーンCookieを先に設定
     sess.cookies.set("timezone", tz)
 
-    # ② 本ページを取得
-    html_text = sess.get(url, timeout=20).text
+    res = sess.get(url, timeout=20)
+    res.raise_for_status()
+    html_text = res.text
 
-    # Chart.jsのdivを探す
     soup = bs4.BeautifulSoup(html_text, "html.parser")
-    for div in soup.select('div[data-controller="chartjs"]'):
-        raw = div.get("data-chartjs-data-value")
-        if not raw:
-            continue
-        chart = json.loads(html.unescape(raw))
-        title = chart.get("options", {}).get("plugins", {}).get("title", {}).get("text", "")
-        if title.startswith("Ranked History"):
-            ds = next(d for d in chart["data"]["datasets"] if d.get("yAxisID") == "mr")
-            return [{"d": p["x"], "r": p["y"]} for p in ds["data"]]
+    # data-chartjs-data-value 属性を持つdivを探す
+    div = soup.select_one('div[data-chartjs-data-value]')
+    
+    if not div:
+        raise RuntimeError("グラフデータ(data-chartjs-data-value)が見つかりませんでした。")
 
-    raise RuntimeError("Ranked History グラフが見つかりませんでした。")
+    raw = div.get("data-chartjs-data-value")
+    chart = json.loads(html.unescape(raw))
+    
+    datasets = chart.get("data", {}).get("datasets", [])
+    
+    # MR(マスターレート)のデータセットを優先的に探す
+    # yAxisID が 'mr' を含むもの、またはラベルが 'MR' のものを探す
+    ds = next((d for d in datasets if "mr" in d.get("yAxisID", "").lower() or d.get("label") == "MR"), None)
+    
+    # もしMRが見つからない（ダイヤ以下など）場合は LP を探す
+    if not ds:
+        ds = next((d for d in datasets if "lp" in d.get("yAxisID", "").lower() or d.get("label") == "LP"), None)
+
+    if not ds or "data" not in ds:
+        raise RuntimeError("有効なMRまたはLPのデータセットが見つかりませんでした。")
+
+    # データの抽出 (x: 日時, y: レート)
+    # yがNone（試合はあるがMRが動いていない等）のデータを除外してリスト化
+    return [{"d": p["x"], "r": p["y"]} for p in ds["data"] if p.get("y") is not None]
 
 
 # ========================= 解析/描画ユーティリティ =========================
@@ -262,7 +274,7 @@ def plot_rank_history(
                     continue
                 ema = exponential_moving_average(seg, n)
                 xs = [xs_all[a + i] for i in range(len(ema))]
-                ax.plot(xs, ema, linewidth=2.0, linestyle="--",
+                ax.plot(xs, ema, linewidth=2.0,
                         label=f"EMA({n})" if first_leg else None)
                 first_leg = False
 
