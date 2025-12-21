@@ -293,14 +293,16 @@ def plot_rank_history(
     # 一度レイアウトを確定させる
     fig.tight_layout()
 
-    # ====== 日付ラベル（x軸の目盛間隔に自動追従。先頭末尾も表示） ======
-    step = _infer_tick_step(ax, len(xs_all))
-
-    # 目盛位置を取得（1..Nの範囲）
+    # 1. matplotlibが自動で計算した目盛り位置をすべて取得
     tick_positions = [int(round(t)) for t in ax.get_xticks() if 1 <= t <= len(xs_all)]
-    if not tick_positions:
-        tick_positions = list(range(step, len(xs_all) + 1, step))
-    positions = sorted(set([1, len(xs_all)] + tick_positions))
+    
+    # 2. もし目盛りが少なすぎる場合は、強制的に分割数を増やす（例: 10分割）
+    if len(tick_positions) < 8:
+        import numpy as np
+        tick_positions = np.linspace(1, len(xs_all), 10).round().astype(int).tolist()
+
+    # 3. 先頭と末尾を確実に入れつつ、重複を除去してソート
+    positions = sorted(set([1, len(xs_all)] + tick_positions)) 
 
     # ラベルは「x=データ座標、y=軸座標」で描く（水平ズレしない）
     xtrans = ax.get_xaxis_transform()
