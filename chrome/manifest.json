@@ -1,0 +1,11 @@
+{
+  "manifest_version": 3,
+  "name": "SFBuff MA Visualizer",
+  "version": "1.0",
+  "content_scripts": [
+    {
+      "matches": ["https://sfbuff.site/fighters/*/ranked_history*"],
+      "js": ["chart.min.js", "content.js"]
+    }
+  ]
+}
